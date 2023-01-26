@@ -11,7 +11,7 @@ const time = 1000 * 15 * 60;
 router.use(cookiejk());
 router.use(bodyParser.urlencoded({ extended: true }));
 const sendmail = require("../nodemailer/mailer");
-const { hash } = require("bcrypt");
+const bcrypt = require("bcrypt");
 
 
 
