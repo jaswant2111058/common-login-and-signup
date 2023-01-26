@@ -3,6 +3,7 @@ const app = express();
 require('dotenv').config();
 const port = process.env.PORT||5000;
 require('./auth');
+const cors = require("cors")
 require("./connection/conn")
 app.set("view engine",'ejs');
 const path = require("path");
@@ -12,6 +13,7 @@ app.set("view engine", "ejs");
 const login =  require("./routes/login")
 const google =  require("./routes/google")
 const main =  require("./routes/main")
+app.use(cors())
 
 
 app.use("/",login);

@@ -24,7 +24,7 @@ router.post('/signup', async (req, res) => {
   const pass = req.body.password;
   bcrypt.hash(pass, 12, async function (err, hash){
     const otp=sendmail(req.body.email);
-    const detail = { email: req.body.email, password: hash, user_name: req.body.username, email_status: false,otp:otp }
+    const detail = { email: req.body.email, password: hash, name: req.body.username, email_status: false,otp:otp }
       const usr = new schema(detail)
       const adnew = await usr.save();
       console.log(otp)
@@ -46,7 +46,7 @@ router.post('/signup', async (req, res) => {
 router.post("/otpverification", async (req, res) => {
       
   try{
-      let otp = schema.findOne({email:req.body.email})
+      let otp = await schema.findOne({email:req.body.email})
   if (otp.otp == req.body.otp) {
     await schema.updateOne({ email: req.body.email }, { email_status: true });
     res.send({ msg: "otp verified" })
