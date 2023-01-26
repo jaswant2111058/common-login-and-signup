@@ -2,70 +2,63 @@ const express = require("express");
 const router = express.Router();
 const schema = require("../model/model")
 router.use(express.json());
-router.use(express.urlencoded({extended:false}));
+router.use(express.urlencoded({ extended: false }));
 const cookiejk = require("cookie-parser");
-const bodyParser= require("body-parser")
+const bodyParser = require("body-parser")
 const jwt = require("jsonwebtoken");
 const key = process.env.SESSION_SECRET;
-const time = 1000*15*60;
+const time = 1000 * 15 * 60;
 router.use(cookiejk());
 router.use(bodyParser.urlencoded({ extended: true }));
-const sendmail = require("../nodemailer/mailer")
+const sendmail = require("../nodemailer/mailer");
+const { hash } = require("bcrypt");
 
 
 
 
 //signup post
 
-router.post('/signup',async(req,res)=>{
-const pass = req.body.password;
-const repass= req.body.repassword;
-//const adnew= schema.findOne(res.body.email)
-if(pass===repass)
-{
-  const detail ={ user_email:req.body.email,password:pass,user_name:req.body.username,email_status:false}
- 
-  try{
-    const usr= new schema(detail)
-    const adnew = await usr.save();
-    //req.otp=sendmail(req.body.email);
-  
-    //res.render("otpverification",{email:req.body.email})
-   // console.log(req.otp)
-    res.send({msg : "signup successful redirect to the login page"})
-     }
-  catch
-  {
-    res.status(400).send({msg:"email is all ready register"+"<html><br><br><a href='/'>return<a></html>"});
-  }
+router.post('/signup', async (req, res) => {
 
- 
+  try {
+  const pass = req.body.password;
+  bcrypt.hash(pass, 12, async function (err, hash){
+    const otp=sendmail(req.body.email);
+    const detail = { email: req.body.email, password: hash, user_name: req.body.username, email_status: false,otp:otp }
+      const usr = new schema(detail)
+      const adnew = await usr.save();
+      console.log(otp)
+      res.send({ msg: "signup successful redirect to the login page" })
+    }) 
+    
 }
 
-else{
-  res.send({msg:"entered password is not matching"+"<html><br><br><a href='/'>return<a></html>"})
+  catch
+  {
+    res.status(400).send({ msg: "email is all ready register" + "<html><br><br><a href='/'>return<a></html>" });
   }
-  
-   
+
 })
 
 
 //otp verification
 
-router.post("/otpverification",async(req,res)=>{
+router.post("/otpverification", async (req, res) => {
+      
+  try{
+      let otp = schema.findOne({email:req.body.email})
+  if (otp.otp == req.body.otp) {
+    await schema.updateOne({ email: req.body.email }, { email_status: true });
+    res.send({ msg: "otp verified" })
+  }
+  else {
+    res.send({ msg: "otp is not matching" })
 
-     console.log(req.otp)
-    if(req.otp==req.body.otp)
-    {
-      await schema.updateOne({user_email:req.body.email},{email_status:true});
-      res.send({msg : "otp verified"})
-    }
-    else
-    {
-      res.send({msg:"otp is not matching"})
-
-    }
-
+  }
+  }
+  catch{
+    res.status(400).send({ msg: "something went wrong" });
+  }
 })
 
 
@@ -73,37 +66,43 @@ router.post("/otpverification",async(req,res)=>{
 
 router.post("/login", async (req, res) => {
 
-try {
+  try {
     const lemail = req.body.email
     const lpassword = req.body.password
 
-    const semail = await schema.findOne({ user_email: lemail })
-    if(semail&& semail.email_status===true)
-    {
-   // res.send(semail)
-   // const pcheck = await bcrypt.compare(lpassword, semail.password)
+    const semail = await schema.findOne({email: lemail })
+    if (semail && semail.email_status === true) {
+      // res.send(semail)
+      // const pcheck = await bcrypt.compare(lpassword, semail.password)
+      bcrypt.compare(lpassword, semail.password, function(err, rs){
+        if(err)
+        {
+          res.send({msg:"kuchh error hai bro"})
+        }
+        if (!rs) {
 
-    if (lpassword!=semail.password) {
-
-        res.send( {msg:"password not match"} );
-    }
-    else {
-            const token = jwt.sign({email:semail.email,id:semail._id},key)
-             res.cookie("token", token, {
+          res.send({ msg: "password not match" });
+        }
+        else {
+          const token = jwt.sign({ email: semail.email, id: semail._id }, key)
+          res.cookie("token", token, {
             expires: new Date(Date.now() + time),
-              httpOnly: true})
-              console.log(token);
-              useremail=lemail;
-              res.send({msg:`user logged in`,email:`${lemail}`})    
-    }
-  }
-  else
-  res.send({msg:"Email is not register"+"<html><br><br><a href='/'>signup<a></html>"})
-}
+            httpOnly: true
+          })
+          console.log(token);
+          res.send({ msg: `user logged in`, email: `${lemail}` })
+        }
 
-catch (e) {
+      })
+      
+    }
+    else
+      res.send({ msg: "Email is not register" + "<html><br><br><a href='/'>signup<a></html>" })
+  }
+
+  catch (e) {
     res.status(400).send(e);
-}
+  }
 })
 
 
@@ -113,35 +112,41 @@ catch (e) {
 
 // forget password post
 
-router.post("/forgetpassword",async(req,res)=>{
-const semail = await schema.findOne({ user_email: req.body.email })
-if(!semail)
-{
-res.send({msg:"Email is not register"+"<html><br><br><a href='/'>signup<a></html>"})
-}
-else
-{
-  sendmail(req.body.email);
+router.post("/forgetpassword", async (req, res) => {
+  try{
+  const semail = await schema.findOne({email: req.body.email })
+  if (!semail) {
+    res.send({ msg: "Email is not register" + "<html><br><br><a href='/'>signup<a></html>" })
+  }
+  else {
+    const otp =sendmail(req.body.email);
+    await schema.updateOne({email:req.body.email},{otp:otp})
 
-res.render("fov",{email:req.body.email})
-}
-
+    res.send( { msg: "otp send to "+req.body.email })
+  }
+  }
+  catch{
+    res.status(400).send(e);
+  }
 })
 
 
 //forget password otp verification
 
-router.post("/fov",async(req,res)=>{
+router.post("/fov", async (req, res) => {
 
-     
-if(otp===req.body.otp)
-{
-await schema.updateOne({user_email:req.body.email},{password:req.body.password});
-res.redirect("/")
+    try{
+      const otp = schema.findOne({email:req.body.email})
+  if (otp.otp == req.body.otp) {
+    await schema.updateOne({ email: req.body.email }, { password: req.body.password });
+    res.send({msg:"password changed"})
+  }
+  else {
+    res.send({ msg: "otp is not matching"  })
+  }
 }
-else
-{
-res.send({msg :"otp is not matching"+"<html><br><br><a href='/'>signup<a></html>"})
+catch{
+  res.status(400).send(e);
 }
 })
 

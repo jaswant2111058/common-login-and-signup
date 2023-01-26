@@ -21,21 +21,21 @@ router.get('/auth/google',
 router.get( '/auth/google/callback',
   passport.authenticate( 'google', {
     successRedirect: '/googlelogin',
-    failureRedirect: '/auth/google/failure'
+    failureRedirect: '/'
   })
 );
 
 router.get("/googlelogin",isLoggedIn, async (req,res)=>{
-    useremail=req.user.email;
-    const semail = await schema.findOne({ user_email: req.user.email})
+    const useremail=req.user.email;
+    const semail = await schema.findOne({ email: req.user.email})
     if(!semail)
     {
     try{
-      const detail= {user_name:req.user.displayName,user_email:req.user.email,email_status:"verified",product_id:[],product_price:[], product_quantity:[],} 
-      
-  const usr = new schema(detail);
-   const adnew = await usr.save();
-  res.send({msg:"user logged in"});
+      const detail= {name:req.user.displayName,email:req.user.email,email_status:true} 
+      const usr = new schema(detail);
+      const adnew = await usr.save();
+  res.send({msg:"user logged in "+ req.email});
+ // res.redirect("/check")
      }
       catch(error){
         res.status(400).send(error);

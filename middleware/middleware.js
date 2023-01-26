@@ -3,6 +3,7 @@ const key="jassi"
 function isLoggedIn(req, res, next) {
  
     if(req.user) {
+      req.email=req.user.email
       next()
     } else
     {

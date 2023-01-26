@@ -10,7 +10,7 @@ const userSchema = new mongoose.Schema({
     },
     email:{
         type:String,
-        unique:[true,"email already exist"]
+       // unique:[true,"email already exist"]
     },
     email_status:
     
@@ -24,8 +24,19 @@ const userSchema = new mongoose.Schema({
       },
       user_detail:{
         type:Array,
-      }
+      },
+      otp:
+      {
+        type:Number,
+        timeseries: {
+            timeField: "timestamp",
+            metaField: "metadata",
+            granularity: "seconds"
+         },
+         expireAfterSeconds: 30,
+        }
+        
   });
   
 
-  module.exports =  mongoose.model("resumeDetails", userSchema); 
+  module.exports =  mongoose.model("commonLogin", userSchema); 
