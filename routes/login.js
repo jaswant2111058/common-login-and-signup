@@ -3,12 +3,12 @@ const router = express.Router();
 const schema = require("../model/model")
 router.use(express.json());
 router.use(express.urlencoded({ extended: false }));
-const cookiejk = require("cookie-parser");
+const cookie = require("cookie-parser");
 const bodyParser = require("body-parser")
 const jwt = require("jsonwebtoken");
 const key = process.env.SESSION_SECRET;
 const time = 1000 * 15 * 60;
-router.use(cookiejk());
+router.use(cookie());
 router.use(bodyParser.urlencoded({ extended: true }));
 const sendmail = require("../nodemailer/mailer");
 const bcrypt = require("bcrypt");
@@ -72,8 +72,6 @@ router.post("/login", async (req, res) => {
 
     const semail = await schema.findOne({email: lemail })
     if (semail && semail.email_status === true) {
-      // res.send(semail)
-      // const pcheck = await bcrypt.compare(lpassword, semail.password)
       bcrypt.compare(lpassword, semail.password, function(err, rs){
         if(err)
         {

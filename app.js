@@ -7,6 +7,8 @@ const cors = require("cors")
 require("./connection/conn")
 app.set("view engine",'ejs');
 const path = require("path");
+const cookie = require("cookie-parser");
+app.use(cookie()); 
 const static1 = path.join(__dirname,"/views")
 app.use(express.static(static1));
 app.set("view engine", "ejs");
